@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Math Solver</title>
-<meta name="description" content="Solve equations, inequalities, systems and word problems step by step. Write with Apple Pencil.">
+<meta name="description" content="Write any math problem with Apple Pencil and get it solved step by step by Claude.">
 <meta name="theme-color" content="#F5F6F8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -19,53 +19,66 @@
 <div class="page">
   <header class="masthead">
     <h1>Math Solver</h1>
-    <p>Type or write an equation, inequality, system or word problem. Get the answer and every step that leads to it.</p>
+    <p>Write any math problem with Apple Pencil. Claude reads it and solves it step by step.</p>
   </header>
+
+  <section class="card setup" id="setup" hidden></section>
 
   <div class="layout">
     <main class="col-main">
       <section class="card">
-        <label for="problem" class="label">Problem</label>
-        <form id="solve-form" class="input-row" autocomplete="off">
-          <textarea id="problem" rows="1" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="e.g. 2x + 3 = 11">2x + 3 = 11</textarea>
-          <button type="submit" class="primary" id="solve-btn">Solve</button>
-        </form>
-        <div class="keys" id="keys"></div>
-        <p class="hint">Any letter can be the unknown. Use <b>&lt; &gt; ≤ ≥</b> for inequalities, put each equation of a system on its own line (or separate them with “;”), and start with “solve for r:” to rearrange a formula. Supports + − × ÷ ^, brackets, √, sin, cos, tan (radians), ln, log, abs, !, %, π and e. On iPad, write straight into the box with Apple Pencil — Scribble turns your handwriting into text. Shift + Enter adds a new line.</p>
-      </section>
-
-      <section class="card">
         <div class="card-head">
-          <h2>Scratchpad</h2>
+          <h2>Your problem</h2>
           <div class="tools">
             <button type="button" class="tool" id="tool-pen" aria-pressed="true">Pen</button>
             <button type="button" class="tool" id="tool-eraser" aria-pressed="false">Eraser</button>
-            <button type="button" class="tool plain" id="pad-clear">Clear page</button>
+            <button type="button" class="tool plain" id="pad-undo">Undo</button>
+            <button type="button" class="tool plain" id="pad-clear">Clear</button>
           </div>
         </div>
-        <canvas id="pad" aria-label="Scratchpad for working by hand"></canvas>
-        <p class="hint">Work it out by hand. Apple Pencil pressure changes the line weight, and your palm is ignored once the Pencil touches the page.</p>
+        <canvas id="pad" aria-label="Writing pad. Write your math problem here with Apple Pencil or your finger."></canvas>
+
+        <div class="extras">
+          <div class="photo-row">
+            <label class="tool plain file-btn" for="photo">Add a photo</label>
+            <input type="file" id="photo" accept="image/*" class="visually-hidden">
+            <div id="photo-preview" class="photo-preview" hidden>
+              <img id="photo-img" alt="Photo of the problem">
+              <button type="button" class="tool plain" id="photo-remove">Remove photo</button>
+            </div>
+          </div>
+          <label for="typed" class="label">Or type it (optional)</label>
+          <textarea id="typed" rows="2" spellcheck="false" placeholder="e.g. A train travels 240 km in 3 hours. What is its average speed?"></textarea>
+        </div>
+
+        <button type="button" class="primary wide" id="solve-btn">Solve</button>
       </section>
 
-      <section class="card" id="result" aria-live="polite"></section>
+      <section class="card" id="result" aria-live="polite" hidden></section>
+
+      <section class="card" id="followup" hidden>
+        <h2>Ask about this problem</h2>
+        <div id="thread" class="thread"></div>
+        <form id="ask-form" class="ask-row">
+          <label for="ask" class="visually-hidden">Your question</label>
+          <textarea id="ask" rows="1" placeholder="e.g. Why did you divide by 3?"></textarea>
+          <button type="submit" class="primary" id="ask-btn">Ask</button>
+        </form>
+      </section>
     </main>
 
     <aside class="col-side">
-      <section class="card">
+      <section class="card" id="graph-card" hidden>
         <h2>Graph</h2>
-        <div id="graph"></div>
-      </section>
-      <section class="card" id="claude-card">
-        <h2>Word problems</h2>
-        <div id="claude-settings"></div>
-      </section>
-      <section class="card">
-        <h2>Try an example</h2>
-        <div class="list" id="examples"></div>
+        <div id="graph" class="graph"></div>
       </section>
       <section class="card">
         <h2>Recent</h2>
         <div class="list" id="history"></div>
+      </section>
+      <section class="card">
+        <h2>Claude</h2>
+        <div id="claude-settings"></div>
       </section>
     </aside>
   </div>

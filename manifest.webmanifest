@@ -1,7 +1,7 @@
 {
   "name": "Math Solver",
   "short_name": "Math Solver",
-  "description": "Solve equations and expressions step by step. Write with Apple Pencil.",
+  "description": "Write any math problem with Apple Pencil and get it solved step by step by Claude.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
