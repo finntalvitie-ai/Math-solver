@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Math Solver</title>
+<meta name="description" content="Solve equations and expressions step by step. Write with Apple Pencil.">
+<meta name="theme-color" content="#F5F6F8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Math Solver">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <h1>Math Solver</h1>
+    <p>Type or write an equation or expression. Get the answer and every step that leads to it.</p>
+  </header>
+
+  <div class="layout">
+    <main class="col-main">
+      <section class="card">
+        <label for="problem" class="label">Problem</label>
+        <form id="solve-form" class="input-row" autocomplete="off">
+          <input id="problem" type="text" inputmode="text" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="e.g. 2x + 3 = 11" value="2x + 3 = 11">
+          <button type="submit" class="primary">Solve</button>
+        </form>
+        <div class="keys" id="keys"></div>
+        <p class="hint">Use x as the variable. Supports + − × ÷ ^, brackets, √, sin, cos, tan (radians), ln, log, abs, π and e. On iPad, write straight into the box with Apple Pencil — Scribble turns your handwriting into text.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Scratchpad</h2>
+          <div class="tools">
+            <button type="button" class="tool" id="tool-pen" aria-pressed="true">Pen</button>
+            <button type="button" class="tool" id="tool-eraser" aria-pressed="false">Eraser</button>
+            <button type="button" class="tool plain" id="pad-clear">Clear page</button>
+          </div>
+        </div>
+        <canvas id="pad" aria-label="Scratchpad for working by hand"></canvas>
+        <p class="hint">Work it out by hand. Apple Pencil pressure changes the line weight, and your palm is ignored once the Pencil touches the page.</p>
+      </section>
+
+      <section class="card" id="result" aria-live="polite"></section>
+    </main>
+
+    <aside class="col-side">
+      <section class="card">
+        <h2>Graph</h2>
+        <div id="graph"></div>
+      </section>
+      <section class="card">
+        <h2>Try an example</h2>
+        <div class="list" id="examples"></div>
+      </section>
+      <section class="card">
+        <h2>Recent</h2>
+        <div class="list" id="history"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+<script src="solver.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
