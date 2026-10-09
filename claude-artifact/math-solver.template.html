@@ -147,7 +147,7 @@ textarea { width: 100%; min-height: 52px; padding: 12px 14px; font-size: 17px; l
           <img id="photo-img" alt="Photo of the problem" hidden>
           <button type="button" class="btn quiet" id="photo-remove" hidden>Remove photo</button>
         </div>
-        <label class="label" for="typed">Or type it</label>
+        <label class="label" for="typed">Or type it (on iPad you can write here with Apple Pencil too)</label>
         <textarea id="typed" rows="2" placeholder="e.g. A train travels 240 km in 3 hours. What is its average speed?"></textarea>
       </div>
       <button type="button" class="btn primary big" id="solve">Solve</button>
@@ -244,6 +244,39 @@ textarea { width: 100%; min-height: 52px; padding: 12px 14px; font-size: 17px; l
       undo() { strokes.pop(); redraw(); onChange(); },
       clear() { strokes = []; redraw(); onChange(); },
       hasInk() { return strokes.some((s) => s.tool === 'pen'); },
+      // The writing as simplified pen strokes on a 0-100 grid (y goes down), for views that can't send images.
+      toStrokeText() {
+        // Remove pen points the eraser went over, splitting strokes where it cut through.
+        const erased = strokes.filter((s) => s.tool === 'eraser').reduce((a, s) => a.concat(s.points), []);
+        const gone = (p) => erased.some((q) => Math.hypot(p.x - q.x, p.y - q.y) < 14);
+        const pieces = [];
+        strokes.filter((s) => s.tool === 'pen').forEach((s) => {
+          let run = [];
+          s.points.forEach((p) => { if (gone(p)) { if (run.length) pieces.push(run); run = []; } else run.push(p); });
+          if (run.length) pieces.push(run);
+        });
+        if (!pieces.length) return null;
+        const all = pieces.flat();
+        const minX = Math.min(...all.map((p) => p.x)), maxX = Math.max(...all.map((p) => p.x));
+        const minY = Math.min(...all.map((p) => p.y)), maxY = Math.max(...all.map((p) => p.y));
+        const k = 100 / Math.max(maxX - minX, maxY - minY, 1);
+        const simplify = (pts, eps) => {
+          if (pts.length < 3) return pts;
+          const [a, b] = [pts[0], pts[pts.length - 1]];
+          const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+          let far = 0, idx = 0;
+          for (let i = 1; i < pts.length - 1; i++) {
+            const d = Math.abs(dy * pts[i][0] - dx * pts[i][1] + b[0] * a[1] - b[1] * a[0]) / len;
+            if (d > far) { far = d; idx = i; }
+          }
+          return far > eps ? simplify(pts.slice(0, idx + 1), eps).slice(0, -1).concat(simplify(pts.slice(idx), eps)) : [a, b];
+        };
+        const lines = pieces.map((run, i) => {
+          const pts = simplify(run.map((p) => [(p.x - minX) * k, (p.y - minY) * k]), 0.7);
+          return 'S' + (i + 1) + ': ' + pts.map(([x, y]) => Math.round(x) + ',' + Math.round(y)).join(' ');
+        });
+        return 'Grid ' + Math.round((maxX - minX) * k) + ' wide × ' + Math.round((maxY - minY) * k) + ' tall. ' + pieces.length + ' strokes in the order they were drawn.\n' + lines.join('\n');
+      },
       // The writing cropped to its edges, black on white, as a PNG blob.
       toBlob() {
         const pts = strokes.filter((s) => s.tool === 'pen').reduce((a, s) => a.concat(s.points), []);
@@ -310,8 +343,16 @@ textarea { width: 100%; min-height: 52px; padding: 12px 14px; font-size: 17px; l
     '6. If there is no math problem, say so in answer and leave the other fields empty.'
   ].join('\n');
 
-  function buildPrompt(hasDrawing, hasPhoto, typed) {
+  function buildPrompt(hasDrawing, hasPhoto, typed, strokeText) {
     const what = [];
+    if (strokeText) {
+      what.push('The student handwrote a math problem with Apple Pencil. You cannot see it as a picture, so here it is as pen strokes: ' +
+        'each stroke is a polyline of x,y points on a grid where x goes right and y goes DOWN, listed in the order they were drawn. ' +
+        'Reconstruct the handwriting: group strokes into symbols from left to right (and top to bottom for several lines, fractions and exponents), ' +
+        'work out each digit, letter and sign from its shape (for example a short horizontal stroke is a minus or part of =, two crossing strokes are + or ×, ' +
+        'a small symbol raised above the line is an exponent, a horizontal line with symbols above and below is a fraction bar), ' +
+        'then read the whole problem. If anything is ambiguous, pick the reading that makes a sensible math problem and say so in reading_note.\n' + strokeText);
+    }
     if (hasDrawing) what.push('The first image is a math problem the student handwrote with Apple Pencil on squared paper.');
     if (hasPhoto) what.push((hasDrawing ? 'The second image' : 'The image') + ' is a photo of the problem.');
     if (typed) what.push('The student typed: ' + typed);
@@ -425,12 +466,13 @@ textarea { width: 100%; min-height: 52px; padding: 12px 14px; font-size: 17px; l
     const drawing = pad.hasInk() ? await pad.toBlob() : null;
     let images = [drawing, photo].filter(Boolean);
     if (!images.length && !typed) { showError(box, 'Nothing to solve yet', 'Write a problem on the pad first, or type it.'); return; }
-    if (images.length && !(limits && limits.images)) {
-      if (!typed) { showError(box, 'Claude can’t see the pad here', ERRORS.images_unavailable); return; }
-      images = [];
-    }
-    if (limits && limits.images) images = images.slice(0, limits.images.maxCount);
-    const prompt = buildPrompt(!!drawing && images.includes(drawing), !!photo && images.includes(photo), typed);
+    // Some Claude views can't send pictures: then the pad goes as pen strokes instead.
+    const canSeeImages = !!(limits && limits.images);
+    const strokeText = drawing && !canSeeImages ? pad.toStrokeText() : null;
+    if (!canSeeImages) images = [];
+    else images = images.slice(0, limits.images.maxCount);
+    if (!images.length && !strokeText && !typed) { showError(box, 'Nothing to solve yet', 'Write a problem on the pad first, or type it.'); return; }
+    const prompt = buildPrompt(images.includes(drawing), !!photo && images.includes(photo), typed, strokeText);
     ctl = new AbortController();
     const myCtl = ctl;
     solveBtn.disabled = true;
@@ -441,6 +483,7 @@ textarea { width: 100%; min-height: 52px; padding: 12px 14px; font-size: 17px; l
       const r = normalize(await sample.json(prompt, { images: images.length ? images : undefined, modelTier: 'complex', signal: myCtl.signal }));
       current = r; thread = [];
       renderSolution(r, false);
+      if (strokeText) box.appendChild(el('p', 'hint', 'This Claude view can’t send pictures, so your writing was sent as pen strokes. If Claude misreads it, write in the “Or type it” box instead: on iPad, Apple Pencil writing there turns into text.'));
       $('thread').replaceChildren();
       $('followup').hidden = false;
       if (r.read_as) remember(r.read_as, r.answer);
