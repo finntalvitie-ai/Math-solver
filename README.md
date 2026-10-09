@@ -1,18 +1,28 @@
 # Math Solver
 
-A step-by-step math solver that installs as an app on iPad, iPhone, Android and desktop, and works offline. On iPad you can write problems with Apple Pencil.
+A step-by-step math solver for equations, inequalities, systems, formulas and word problems that installs as an app on iPad, iPhone, Android and desktop, and works offline. On iPad you can write problems with Apple Pencil.
 
 ## What it solves
 
-- **Arithmetic** like `(2 + 3) × 4 − 6 ÷ 2`, one operation per step, with fractions where they apply.
-- **Linear equations** like `3(x − 2) = 2x + 7`, ending with a check that puts the answer back into both sides.
-- **Quadratics** using the discriminant and quadratic formula, with exact surd answers (`(3 ± √5) / 2`), the factored form, and complex answers.
-- **Cubics and higher, and equations with sin, cos, tan, ln, log, abs**: solved numerically between x = −50 and 50 and rounded to 6 decimal places.
-- **Expressions in x** like `(x + 1)^3`: expanded and simplified.
+All of this runs on the device, offline:
 
-Every problem with x gets a graph with the solutions marked.
+- **Arithmetic** like `(2 + 3) × 4 − 6 ÷ 2`, `5!`, `15% of 80`, one operation per step, with fractions where they apply.
+- **Equations in any letter**: linear (with a check step), quadratic (exact surd and complex answers, factored form), cubic and higher (all real roots), and equations with sin, cos, ln, √, abs and so on (solved numerically between −50 and 50).
+- **Inequalities** with `<`, `>`, `≤`, `≥`, `≠`: linear (including flipping the sign when dividing by a negative), quadratic and higher with a sign chart, rational and square-root ones, and double inequalities like `1 < 2x + 3 ≤ 7`. Answers come as inequalities and in interval notation, with the solution shaded on the graph.
+- **Systems of equations**, one per line (or separated by `;`): linear systems of any size by elimination, including no-solution and infinitely-many cases, and two-equation non-linear systems where one equation is linear (like `x + y = 5`, `xy = 6`).
+- **Formulas**: `solve for r: A = πr²` → `r = ±√(A / π)`; `v = u + at, solve for a` → `a = (v − u) / t`.
+- **Expressions in several letters**: `(a + b)²` → `a² + 2ab + b²`.
 
-Not supported: inequalities, systems of equations, and variables other than `x`. The numerical solver can miss a solution where the graph only touches zero without crossing it.
+Not supported: inequalities in more than one letter, non-linear systems with three or more letters, and rearranging formulas where the letter appears cubed or inside a function. The numerical solver can miss a solution where the graph only touches zero without crossing it.
+
+## Word problems
+
+Word problems are read by Claude (model `claude-opus-5-5`), which needs an internet connection and your own Anthropic API key:
+
+1. Create a key at [console.anthropic.com](https://console.anthropic.com/settings/keys) and add credit to the account.
+2. Paste it into the **Word problems** panel. It is stored only in that browser and sent only to Anthropic.
+
+Claude writes the equations; the app's own engine then solves them step by step and checks its numbers against Claude's answer, showing "✓ Checked" or a warning if they differ. Each word problem costs a few US cents. Claude can still misread a problem, so read the "Setting it up" section, especially when there is a warning.
 
 ## Apple Pencil
 

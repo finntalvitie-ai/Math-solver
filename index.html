@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Math Solver</title>
-<meta name="description" content="Solve equations and expressions step by step. Write with Apple Pencil.">
+<meta name="description" content="Solve equations, inequalities, systems and word problems step by step. Write with Apple Pencil.">
 <meta name="theme-color" content="#F5F6F8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
 <div class="page">
   <header class="masthead">
     <h1>Math Solver</h1>
-    <p>Type or write an equation or expression. Get the answer and every step that leads to it.</p>
+    <p>Type or write an equation, inequality, system or word problem. Get the answer and every step that leads to it.</p>
   </header>
 
   <div class="layout">
@@ -27,11 +27,11 @@
       <section class="card">
         <label for="problem" class="label">Problem</label>
         <form id="solve-form" class="input-row" autocomplete="off">
-          <input id="problem" type="text" inputmode="text" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="e.g. 2x + 3 = 11" value="2x + 3 = 11">
-          <button type="submit" class="primary">Solve</button>
+          <textarea id="problem" rows="1" enterkeyhint="go" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="e.g. 2x + 3 = 11">2x + 3 = 11</textarea>
+          <button type="submit" class="primary" id="solve-btn">Solve</button>
         </form>
         <div class="keys" id="keys"></div>
-        <p class="hint">Use x as the variable. Supports + − × ÷ ^, brackets, √, sin, cos, tan (radians), ln, log, abs, π and e. On iPad, write straight into the box with Apple Pencil — Scribble turns your handwriting into text.</p>
+        <p class="hint">Any letter can be the unknown. Use <b>&lt; &gt; ≤ ≥</b> for inequalities, put each equation of a system on its own line (or separate them with “;”), and start with “solve for r:” to rearrange a formula. Supports + − × ÷ ^, brackets, √, sin, cos, tan (radians), ln, log, abs, !, %, π and e. On iPad, write straight into the box with Apple Pencil — Scribble turns your handwriting into text. Shift + Enter adds a new line.</p>
       </section>
 
       <section class="card">
@@ -54,6 +54,10 @@
       <section class="card">
         <h2>Graph</h2>
         <div id="graph"></div>
+      </section>
+      <section class="card" id="claude-card">
+        <h2>Word problems</h2>
+        <div id="claude-settings"></div>
       </section>
       <section class="card">
         <h2>Try an example</h2>

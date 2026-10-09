@@ -1,5 +1,5 @@
 // Caches the app so it opens and works offline. Bump VERSION when any file changes.
-const VERSION = 'math-solver-v1';
+const VERSION = 'math-solver-v2';
 const FILES = [
   './',
   'index.html',
@@ -26,8 +26,9 @@ self.addEventListener('activate', (e) => {
 });
 
 // Network first so updates arrive when online; fall back to the cache offline.
+// Only this app's own files are cached; requests to other sites (the Claude API) pass straight through.
 self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {
