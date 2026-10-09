@@ -1,0 +1,522 @@
+<title>Math Solver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,750&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a squared-paper writing pad beside the worked answer; stacks into one column on narrow screens */
+:root {
+  --bg: #EDF1F7;
+  --paper: #FBFCFE;
+  --surface: #FFFFFF;
+  --ink: #141B2D;
+  --muted: #4A5468;
+  --grid: #D3DDEE;
+  --line: #C6D0E1;
+  --soft: #E3E9F5;
+  --accent: #2348C8;
+  --accent-ink: #FFFFFF;
+  --ok: #17663A;
+  --warn: #9A3B0C;
+  --display: 'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C111A; --paper: #141A26; --surface: #111723; --ink: #E8EDF7; --muted: #A4AEC1;
+    --grid: #222C3E; --line: #2B3549; --soft: #1B2434; --accent: #84A0FF; --accent-ink: #0A0F1E;
+    --ok: #74DB9F; --warn: #FFB27A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C111A; --paper: #141A26; --surface: #111723; --ink: #E8EDF7; --muted: #A4AEC1;
+  --grid: #222C3E; --line: #2B3549; --soft: #1B2434; --accent: #84A0FF; --accent-ink: #0A0F1E;
+  --ok: #74DB9F; --warn: #FFB27A; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; touch-action: manipulation; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.page { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 48px; display: flex; flex-direction: column; gap: 20px; }
+.masthead { display: flex; flex-direction: column; gap: 4px; }
+.masthead h1 { margin: 0; font-family: var(--display); font-weight: 750; font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.02em; text-wrap: balance; }
+.masthead p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+.layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 20px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel h2 { margin: 0; font-family: var(--display); font-weight: 600; font-size: 20px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn { min-height: 44px; padding: 0 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-size: 15px; font-weight: 700; }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.quiet { background: var(--soft); border-color: transparent; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.big { min-height: 60px; font-size: 19px; }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+
+.pad-wrap { position: relative; }
+#pad {
+  display: block; width: 100%; height: clamp(320px, 52vh, 520px);
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  border-radius: 10px; border: 1px solid var(--line);
+  background-color: var(--paper);
+  /* 5 mm squared exercise-book paper */
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 19px 19px; background-position: -1px -1px;
+  cursor: crosshair;
+}
+.pad-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; color: var(--muted); font-family: var(--display); font-size: 22px; opacity: 0.7; text-align: center; padding: 16px; }
+
+.extras { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 14px; font-weight: 700; color: var(--muted); }
+textarea { width: 100%; min-height: 52px; padding: 12px 14px; font-size: 17px; line-height: 1.45; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; resize: vertical; }
+.photo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.photo img { height: 64px; max-width: 160px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.file-label { display: inline-flex; align-items: center; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.read { background: var(--soft); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.read-text { font-family: var(--mono); font-size: 19px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.read-note { margin: 0; font-size: 14px; color: var(--warn); }
+.chip { align-self: flex-start; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--soft); color: var(--muted); }
+.chip.example { background: var(--accent); color: var(--accent-ink); }
+.answer { font-family: var(--display); font-weight: 600; font-size: clamp(24px, 3.4vw, 32px); line-height: 1.25; white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: balance; }
+.verdict { margin: 0; font-size: 14px; font-weight: 700; }
+.verdict.agree { color: var(--ok); }
+.verdict.disagree { color: var(--warn); }
+.hint { margin: 0; font-size: 14px; color: var(--muted); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.steps li::before { counter-increment: step; content: counter(step); width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-top: 2px; }
+.math { display: block; font-family: var(--mono); font-size: 17px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rule { height: 1px; background: var(--line); }
+
+.thinking { display: flex; align-items: center; gap: 12px; }
+.spinner { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--soft); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+.error-title { margin: 0; color: var(--warn); font-family: var(--display); font-size: 20px; }
+
+.thread { display: flex; flex-direction: column; gap: 10px; }
+.bubble { border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble.you { background: var(--soft); align-self: flex-end; max-width: 88%; }
+.bubble.claude { background: var(--paper); border: 1px solid var(--line); }
+.ask { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+.ask textarea { flex: 1 1 220px; min-width: 0; resize: none; }
+
+.recent { display: flex; flex-direction: column; gap: 8px; }
+.recent button { text-align: left; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--paper); display: flex; flex-direction: column; gap: 2px; min-height: 44px; }
+.recent .p { font-family: var(--mono); font-size: 14px; overflow-wrap: anywhere; }
+.recent .a { font-size: 13px; color: var(--muted); }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <h1>Math Solver</h1>
+    <p>Write a math problem with Apple Pencil and press Solve. Claude reads your handwriting and works it out step by step.</p>
+  </header>
+
+  <p class="panel hint" id="unavailable" hidden>Open this page in the Claude app or on claude.ai to solve problems. Claude can’t answer from a copy of the page opened anywhere else.</p>
+
+  <div class="layout">
+    <section class="panel" aria-labelledby="write-h">
+      <div class="row">
+        <h2 id="write-h">Write it</h2>
+        <div class="tools">
+          <button type="button" class="btn" id="tool-pen" aria-pressed="true">Pen</button>
+          <button type="button" class="btn" id="tool-eraser" aria-pressed="false">Eraser</button>
+          <button type="button" class="btn quiet" id="undo">Undo</button>
+          <button type="button" class="btn quiet" id="clear">Clear</button>
+        </div>
+      </div>
+      <div class="pad-wrap">
+        <canvas id="pad" aria-label="Writing pad. Write your math problem here with Apple Pencil or your finger."></canvas>
+        <div class="pad-hint" id="pad-hint">Write your problem here</div>
+      </div>
+      <div class="extras">
+        <div class="photo" id="photo-row" hidden>
+          <label class="btn quiet file-label" for="photo">Add a photo</label>
+          <input type="file" id="photo" class="sr-only" accept="image/jpeg,image/png,image/webp,image/gif">
+          <img id="photo-img" alt="Photo of the problem" hidden>
+          <button type="button" class="btn quiet" id="photo-remove" hidden>Remove photo</button>
+        </div>
+        <label class="label" for="typed">Or type it</label>
+        <textarea id="typed" rows="2" placeholder="e.g. A train travels 240 km in 3 hours. What is its average speed?"></textarea>
+      </div>
+      <button type="button" class="btn primary big" id="solve">Solve</button>
+    </section>
+
+    <div class="layout-col" style="display:flex;flex-direction:column;gap:20px;min-width:0">
+      <section class="panel" id="result" aria-live="polite"></section>
+
+      <section class="panel" id="followup" hidden>
+        <h2>Ask about it</h2>
+        <div class="thread" id="thread"></div>
+        <form class="ask" id="ask-form">
+          <label class="sr-only" for="ask">Your question</label>
+          <textarea id="ask" rows="1" placeholder="e.g. Why did you divide by 2?"></textarea>
+          <button type="submit" class="btn primary" id="ask-btn" style="min-height:52px">Ask</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Recent</h2>
+        <div class="recent" id="recent"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/*SOLVER*/
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+
+  // ---------- writing pad ----------
+  function createPad(canvas, onChange) {
+    const ctx = canvas.getContext('2d');
+    let strokes = [], current = null, tool = 'pen', penSeen = false;
+    const ink = () => getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#141B2D';
+    const width = (s, p) => (s.tool === 'eraser' ? 28 : s.pointer === 'pen' ? 1.4 + p * 3.6 : 3);
+    function segment(c, s, a, b, color) {
+      c.globalCompositeOperation = s.tool === 'eraser' ? 'destination-out' : 'source-over';
+      c.strokeStyle = color; c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = width(s, b.p);
+      c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x + (a === b ? 0.01 : 0), b.y); c.stroke();
+    }
+    const drawStroke = (c, s, color) => s.points.forEach((pt, i) => segment(c, s, s.points[Math.max(0, i - 1)], pt, color));
+    function redraw() {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.restore();
+      strokes.forEach((s) => drawStroke(ctx, s, ink()));
+    }
+    function size() {
+      const r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+      if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+        canvas.width = w; canvas.height = h; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); redraw();
+      }
+      return r;
+    }
+    const point = (e, r) => ({ x: e.clientX - r.left, y: e.clientY - r.top, p: e.pressure > 0 ? e.pressure : 0.5 });
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'pen') penSeen = true;
+      if (e.pointerType === 'touch' && penSeen) return; // palm rejection once the Pencil has been used
+      if (current) return;
+      e.preventDefault();
+      const r = size();
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* optional */ }
+      const pt = point(e, r);
+      current = { tool, pointer: e.pointerType, id: e.pointerId, points: [pt] };
+      strokes.push(current);
+      segment(ctx, current, pt, pt, ink());
+      onChange();
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!current || e.pointerId !== current.id) return;
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+      (list.length ? list : [e]).forEach((ev) => {
+        const pt = point(ev, r);
+        segment(ctx, current, current.points[current.points.length - 1], pt, ink());
+        current.points.push(pt);
+      });
+    });
+    const end = (e) => { if (current && e.pointerId === current.id) current = null; };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    window.addEventListener('resize', size);
+    try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) { /* older browsers */ }
+    new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    size();
+    return {
+      setTool(t) { tool = t; },
+      undo() { strokes.pop(); redraw(); onChange(); },
+      clear() { strokes = []; redraw(); onChange(); },
+      hasInk() { return strokes.some((s) => s.tool === 'pen'); },
+      // The writing cropped to its edges, black on white, as a PNG blob.
+      toBlob() {
+        const pts = strokes.filter((s) => s.tool === 'pen').reduce((a, s) => a.concat(s.points), []);
+        if (!pts.length) return Promise.resolve(null);
+        const m = 24;
+        const minX = Math.min(...pts.map((p) => p.x)) - m, maxX = Math.max(...pts.map((p) => p.x)) + m;
+        const minY = Math.min(...pts.map((p) => p.y)) - m, maxY = Math.max(...pts.map((p) => p.y)) + m;
+        const scale = Math.min(2, 1568 / Math.max(maxX - minX, maxY - minY));
+        const layer = document.createElement('canvas');
+        layer.width = Math.round((maxX - minX) * scale); layer.height = Math.round((maxY - minY) * scale);
+        const lc = layer.getContext('2d');
+        lc.setTransform(scale, 0, 0, scale, -minX * scale, -minY * scale);
+        strokes.forEach((s) => drawStroke(lc, s, '#000000'));
+        const out = document.createElement('canvas');
+        out.width = layer.width; out.height = layer.height;
+        const oc = out.getContext('2d');
+        oc.fillStyle = '#FFFFFF'; oc.fillRect(0, 0, out.width, out.height); oc.drawImage(layer, 0, 0);
+        return new Promise((res) => out.toBlob((b) => res(b), 'image/png'));
+      }
+    };
+  }
+
+  const pad = createPad($('pad'), () => { $('pad-hint').hidden = pad && pad.hasInk(); });
+  const setTool = (t) => { pad.setTool(t); $('tool-pen').setAttribute('aria-pressed', String(t === 'pen')); $('tool-eraser').setAttribute('aria-pressed', String(t === 'eraser')); };
+  $('tool-pen').addEventListener('click', () => setTool('pen'));
+  $('tool-eraser').addEventListener('click', () => setTool('eraser'));
+  $('undo').addEventListener('click', () => pad.undo());
+  $('clear').addEventListener('click', () => pad.clear());
+
+  // ---------- photo ----------
+  let photo = null;
+  $('photo').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    photo = f;
+    const img = $('photo-img');
+    if (img.src) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(f);
+    img.hidden = false; $('photo-remove').hidden = false;
+  });
+  $('photo-remove').addEventListener('click', () => { photo = null; $('photo-img').hidden = true; $('photo-remove').hidden = true; });
+
+  // ---------- Claude ----------
+  let sample, limits = null;
+  const ready = (window.claude && window.claude.use ? window.claude.use('sample') : Promise.resolve(null)).then(async (s) => {
+    sample = s;
+    if (!s) { $('unavailable').hidden = false; return; }
+    limits = await s.limits().catch(() => null);
+    $('photo-row').hidden = !(limits && limits.images);
+  });
+
+  const FORMAT = 'Reply with only one JSON object, no other text, in exactly this shape:\n' +
+    '{"read_as": "2x + 3 = 11", "reading_note": "", "topic": "Linear equation", "answer": "x = 4", ' +
+    '"steps": [{"explanation": "Subtract 3 from both sides.", "math": "2x = 8"}], ' +
+    '"check_equations": ["2x + 3 = 11"], "answer_values": [{"letter": "x", "value": 4}]}';
+  const RULES = [
+    'You are a careful, patient math tutor.',
+    '1. Read the problem exactly. Put what you read in read_as, in plain Unicode math (x², √, ≤, ≥, ≠, ×, ÷, π, fractions as a/b). If some handwriting is unclear, take the most likely reading and say what was unclear in reading_note; otherwise leave it "".',
+    '2. Solve it completely and correctly. It can be any kind of math: arithmetic, algebra, inequalities, systems, word problems, geometry, trigonometry, calculus, probability, statistics or proofs.',
+    '3. steps: the working a good teacher expects, one idea per step: a short plain explanation plus the math for that step. Plain Unicode only. Never LaTeX or Markdown.',
+    '4. answer: the final answer, short, with units if the problem has them. topic: the kind of problem in two to four words.',
+    '5. check_equations: if the problem comes down to equations, inequalities or a calculation, write them for an independent checker: single-letter unknowns (not e or i), operators + - * / ^, brackets, sqrt(), sin(), cos(), tan() in radians, ln(), log(), abs(), pi, and = < > <= >=, one per item, no words or units. A pure calculation is one expression with no = sign. answer_values: the numeric value of each unknown in the answer (letter "" for a calculation). For inequalities, proofs or anything else leave both arrays empty.',
+    '6. If there is no math problem, say so in answer and leave the other fields empty.'
+  ].join('\n');
+
+  function buildPrompt(hasDrawing, hasPhoto, typed) {
+    const what = [];
+    if (hasDrawing) what.push('The first image is a math problem the student handwrote with Apple Pencil on squared paper.');
+    if (hasPhoto) what.push((hasDrawing ? 'The second image' : 'The image') + ' is a photo of the problem.');
+    if (typed) what.push('The student typed: ' + typed);
+    return RULES + '\n\n' + what.join(' ') + '\n\n' + FORMAT;
+  }
+
+  const ERRORS = {
+    not_granted: 'Claude isn’t allowed to answer on this page. Allow it when Claude asks, then press Solve again.',
+    sampling_disabled: 'Claude isn’t available for this account.',
+    rate_limited: 'You’ve reached your Claude usage limit for now, or sent too many at once. Try again in a little while.',
+    session_expired: 'Your Claude sign-in has expired. Sign in again, then press Solve.',
+    image_rejected: 'Claude couldn’t use that image. Try a different photo.',
+    images_unavailable: 'Claude can’t see images in this view. Type the problem in the box instead.',
+    refused: 'Claude declined to answer this.',
+    prompt_too_large: 'That’s too much text at once. Shorten it and try again.'
+  };
+  const errorText = (e) => ERRORS[e && e.code] || 'Claude’s answer didn’t come through. Press Solve to try again.';
+
+  // Re-solves Claude's equations with the built-in solver and compares the numbers.
+  function doubleCheck(r) {
+    if (!r.check_equations.length || !r.answer_values.length || !self.MathSolver) return null;
+    const res = self.MathSolver.compute(r.check_equations.join('\n'), { forceMath: true });
+    if (!res.ok || !res.values.length) return null;
+    const close = (a, b) => Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(b));
+    const ok = r.answer_values.every((cv) => res.values.some((v) => (v.name === '' || v.name === cv.letter) && close(v.value, Number(cv.value))));
+    return { ok, res };
+  }
+
+  const str = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+  function normalize(r) {
+    r = r && typeof r === 'object' ? r : {};
+    return {
+      read_as: str(r.read_as), reading_note: str(r.reading_note), topic: str(r.topic), answer: str(r.answer),
+      steps: Array.isArray(r.steps) ? r.steps.map((s) => ({ explanation: str(s && s.explanation), math: str(s && s.math) })) : [],
+      check_equations: Array.isArray(r.check_equations) ? r.check_equations.map(str).filter(Boolean) : [],
+      answer_values: Array.isArray(r.answer_values) ? r.answer_values.filter((v) => v && isFinite(Number(v.value))) : []
+    };
+  }
+
+  function renderSteps(box, steps) {
+    if (!steps.length) return;
+    const ol = el('ol', 'steps');
+    steps.forEach((s) => {
+      const li = el('li'), body = el('div', 'step-body');
+      if (s.explanation) body.appendChild(el('span', '', s.explanation));
+      if (s.math) body.appendChild(el('code', 'math', s.math));
+      li.appendChild(body); ol.appendChild(li);
+    });
+    box.appendChild(ol);
+  }
+
+  function renderSolution(r, isExample) {
+    const box = $('result');
+    box.replaceChildren();
+    box.removeAttribute('aria-busy');
+    const head = el('div', 'row');
+    head.appendChild(el('h2', '', 'Answer'));
+    if (isExample) head.appendChild(el('span', 'chip example', 'Example'));
+    else if (r.topic) head.appendChild(el('span', 'chip', r.topic));
+    box.appendChild(head);
+    if (r.read_as) {
+      const read = el('div', 'read');
+      read.appendChild(el('span', 'eyebrow', 'I read this as'));
+      read.appendChild(el('div', 'read-text', r.read_as));
+      if (r.reading_note) read.appendChild(el('p', 'read-note', r.reading_note));
+      box.appendChild(read);
+    }
+    box.appendChild(el('div', 'answer', r.answer));
+    const check = doubleCheck(r);
+    if (check && check.ok) box.appendChild(el('p', 'verdict agree', '✓ Double-checked: the built-in solver got the same answer.'));
+    if (check && !check.ok) box.appendChild(el('p', 'verdict disagree', '⚠ The built-in solver got ' + check.res.answers.map((a) => a.text).join(', ') + ' from the same equations. One of them is wrong, so check the steps or ask below.'));
+    if (isExample) box.appendChild(el('p', 'hint', 'This is an example. Write your own problem on the pad and press Solve.'));
+    else if (r.read_as) box.appendChild(el('p', 'hint', 'Misread? Fix it on the pad, or type it, and press Solve again.'));
+    if (r.steps.length) {
+      box.appendChild(el('div', 'rule'));
+      box.appendChild(el('h2', '', 'Steps'));
+      renderSteps(box, r.steps);
+    }
+  }
+
+  function thinking(box, text, onStop) {
+    box.replaceChildren();
+    box.setAttribute('aria-busy', 'true');
+    const row = el('div', 'thinking');
+    row.appendChild(el('span', 'spinner'));
+    row.appendChild(el('span', '', text));
+    box.appendChild(row);
+    if (onStop) {
+      const stop = el('button', 'btn quiet', 'Stop');
+      stop.type = 'button';
+      stop.addEventListener('click', onStop);
+      box.appendChild(stop);
+    }
+  }
+  function showError(box, title, msg) {
+    box.replaceChildren();
+    box.removeAttribute('aria-busy');
+    box.appendChild(el('h2', 'error-title', title));
+    box.appendChild(el('p', 'hint', msg));
+  }
+
+  // ---------- solving ----------
+  let current = null, thread = [], ctl = null;
+  const solveBtn = $('solve');
+
+  async function solve() {
+    if (sample === undefined) await ready;
+    const box = $('result');
+    if (!sample) { showError(box, 'Claude isn’t connected', 'Open this page in the Claude app or on claude.ai to solve problems.'); return; }
+    const typed = $('typed').value.trim();
+    const drawing = pad.hasInk() ? await pad.toBlob() : null;
+    let images = [drawing, photo].filter(Boolean);
+    if (!images.length && !typed) { showError(box, 'Nothing to solve yet', 'Write a problem on the pad first, or type it.'); return; }
+    if (images.length && !(limits && limits.images)) {
+      if (!typed) { showError(box, 'Claude can’t see the pad here', ERRORS.images_unavailable); return; }
+      images = [];
+    }
+    if (limits && limits.images) images = images.slice(0, limits.images.maxCount);
+    const prompt = buildPrompt(!!drawing && images.includes(drawing), !!photo && images.includes(photo), typed);
+    ctl = new AbortController();
+    const myCtl = ctl;
+    solveBtn.disabled = true;
+    $('followup').hidden = true;
+    thinking(box, 'Claude is reading and solving it… this usually takes 10–60 seconds.', () => myCtl.abort());
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    try {
+      const r = normalize(await sample.json(prompt, { images: images.length ? images : undefined, modelTier: 'complex', signal: myCtl.signal }));
+      current = r; thread = [];
+      renderSolution(r, false);
+      $('thread').replaceChildren();
+      $('followup').hidden = false;
+      if (r.read_as) remember(r.read_as, r.answer);
+    } catch (e) {
+      if (e && e.code === 'cancelled') showError(box, 'Stopped', 'Press Solve when you’re ready.');
+      else showError(box, 'Couldn’t solve that', errorText(e));
+    } finally {
+      solveBtn.disabled = false;
+    }
+  }
+  solveBtn.addEventListener('click', solve);
+
+  // ---------- follow-up questions ----------
+  const askInput = $('ask'), askBtn = $('ask-btn');
+  const grow = () => { askInput.style.height = 'auto'; askInput.style.height = Math.max(52, askInput.scrollHeight + 2) + 'px'; };
+  askInput.addEventListener('input', grow);
+  askInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('ask-form').requestSubmit(); } });
+  $('ask-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = askInput.value.trim();
+    if (!q || askBtn.disabled || !current || !sample) return;
+    askInput.value = ''; grow();
+    const you = el('div', 'bubble you', q), reply = el('div', 'bubble claude');
+    $('thread').append(you, reply);
+    const myCtl = new AbortController();
+    thinking(reply, 'Thinking…', () => myCtl.abort());
+    askBtn.disabled = true;
+    const solution = current.steps.map((s, i) => (i + 1) + '. ' + s.explanation + (s.math ? '  ' + s.math : '')).join('\n');
+    const turns = [{ role: 'user', content: 'You are a patient math tutor helping a student with this problem.\nProblem: ' + current.read_as +
+      '\nYour worked solution:\n' + solution + '\nAnswer: ' + current.answer +
+      '\n\nAnswer the student\'s questions about it clearly and briefly, in plain text with Unicode math (no LaTeX, no Markdown).' }];
+    thread.forEach((t) => turns.push({ role: 'user', content: t.q }, { role: 'assistant', content: t.a }));
+    turns.push({ role: 'user', content: q });
+    try {
+      const { text } = await sample(turns, { cache: false, signal: myCtl.signal, onText: ({ text }) => { reply.removeAttribute('aria-busy'); reply.textContent = text; } });
+      reply.textContent = text;
+      thread.push({ q, a: text });
+      if (thread.length > 8) thread.shift();
+    } catch (err) {
+      if (err && err.text) { reply.textContent = err.text; } else showError(reply, err && err.code === 'cancelled' ? 'Stopped' : 'No answer', err && err.code === 'cancelled' ? 'Ask again when you’re ready.' : errorText(err));
+    } finally {
+      askBtn.disabled = false;
+    }
+  });
+
+  // ---------- recent problems ----------
+  const KEY = 'math-solver-recent';
+  let recent = [];
+  try { recent = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { recent = []; }
+  function remember(p, a) {
+    recent = [{ p, a }].concat(recent.filter((r) => r.p !== p)).slice(0, 8);
+    try { localStorage.setItem(KEY, JSON.stringify(recent)); } catch (e) { /* storage unavailable */ }
+    renderRecent();
+  }
+  function renderRecent() {
+    const box = $('recent');
+    box.replaceChildren();
+    if (!recent.length) { box.appendChild(el('p', 'hint', 'Problems you solve appear here. Tap one to solve it again.')); return; }
+    recent.forEach((r) => {
+      const b = el('button');
+      b.type = 'button';
+      b.append(el('span', 'p', r.p), el('span', 'a', r.a));
+      b.addEventListener('click', () => { pad.clear(); $('typed').value = r.p; solve(); });
+      box.appendChild(b);
+    });
+  }
+
+  renderRecent();
+  renderSolution({
+    read_as: '2x + 3 = 11', reading_note: '', topic: 'Linear equation', answer: 'x = 4',
+    steps: [
+      { explanation: 'Subtract 3 from both sides to get the x term on its own.', math: '2x + 3 − 3 = 11 − 3\n2x = 8' },
+      { explanation: 'Divide both sides by 2.', math: 'x = 8 ÷ 2 = 4' },
+      { explanation: 'Check by putting x = 4 back in.', math: '2 · 4 + 3 = 11  ✓' }
+    ],
+    check_equations: ['2x + 3 = 11'], answer_values: [{ letter: 'x', value: 4 }]
+  }, true);
+})();
+</script>
